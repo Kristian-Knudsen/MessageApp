@@ -15,11 +15,19 @@
 <body>
   <div class="container mt-4">
     <% if (typeof(errors) !== 'undefined') { %>
-      <% for (const error of errors) {  %>
+      <% if(typeof(errors) == 'object') { %>
+        <% for(const error in errors) { %>
+          <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Wow - a wild error occured!</strong>
+              <%= error.msg %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        <% } %>
+      <% } else { %>
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
           <strong>Wow - a wild error occured!</strong>
-          <%= error.msg %>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <%= errors %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
       <% } %>
     <% } %>

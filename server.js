@@ -29,7 +29,8 @@ app.get('/login', (req, res) => {
     if(req.session.loggedin == false) { // if user haven't been loggedin, session var isn't set and user is redirected to login
         return res.redirect('/');
     } else if(req.session.errors) {
-        const errors = req.session.errors.errors;
+        const errors = req.session.errors
+        console.log("Error is type" + typeof(errors))
         return res.render('login', {errors: errors});
     } else {
         return res.render('login');
@@ -37,29 +38,27 @@ app.get('/login', (req, res) => {
 });
 
 app.post('/registeruser', [
-    check('username')
+    check('registerusername')
         .trim().escape()
         .isLength({min: 6, max: 50}).withMessage('Username must be between 6 and 50 characters!'),
-    check('password')
+    check('registerpassword')
         .trim().escape()
         .isLength({min: 6, max: 50}).withMessage('Password must be between 6 and 50 characters!'),
-    check('confirmpassword')
+    check('registerconfirmpassword')
         .trim().escape()
         .isLength({min: 6, max: 50}).withMessage('Confirmation password must be between 6 and 50 characters!'),
-    ], (req, res) => {
+    ], async (req, res) => {
         const username = req.body.registerusername;
         const password = req.body.registerpassword;
         const confirmpassword = req.body.registerconfirmpassword;
         const errors = validationResult(req);
 
-        console.log(`${username}, ${password}, ${confirmpassword}`);
-
-        if(errors) {
+        if(!errors.isEmpty()) {
             req.session.errors = errors;
             return res.redirect('/login');
         }
 
-        const isUserRegistered = imports.registerUser(username, password, confirmpassword);
+        const isUserRegistered = await imports.RegisterUser(username, password, confirmpassword);
         if (isUserRegistered !== true) {
             console.log(`user is not logged in due to: ${isUserRegistered}`);
             // something went wrong in registration process
@@ -73,21 +72,37 @@ app.post('/registeruser', [
         }
 });
 
-// app.post('/loginuser', (req, res) => {
-//     const username = req.body.loginusername;
-//     const password = req.body.loginpassword;
+app.post('/loginuser', [
+    check('loginusername')
+        .trim().escape()
+        .isLength({min: 6, max: 50}).withMessage('Username must be between 6 and 50 characters!'),
+    check('loginpassword')
+        .trim().escape()
+        .isLength({min: 6, max:50}).withMessage('Password must be between 6 and 50 characters!')
+], async (req, res) => {
+    const username = req.body.loginusername;
+    const password = req.body.loginpassword;
+    const errors = validationResult(req);
 
-//     if(loginUser(username, password)) {
-//         // Logged in
-//         req.session.loggedin = true;
-//         req.session.username = username;
-//         return res.redirect('/');
-//     } else {
-//         // Not logged in 
-//         return res.redirect('/login')
-//     }
+    if(!errors.isEmpty()) {
+        req.session.errors = errors;
+        return res.redirect('/login');
+    }
     
-// });
+    const isUserLoggedIn = await imports.LoginUser(username, password);
+    if(isUserLoggedIn !== true) {
+        // user is not logged in
+        console.log(isUserLoggedIn);
+        req.session.errors = isUserLoggedIn;
+        return res.redirect('/login');
+    } else {
+        // user is successfully loggedin
+        req.session.loggedin = true;
+        req.session.username = username;
+        return res.redirect('/');
+    }
+    
+});
 
 app.post('/logout', (req, res) => {
     req.session.destroy();

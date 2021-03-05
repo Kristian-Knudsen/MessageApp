@@ -1,78 +1,53 @@
 const bcrypt = require('bcrypt');
 const mysql = require('mysql');
+const util = require('util');
+const conn = mysql.createConnection({ host: 'localhost', user: 'root', password: '', database: 'nodejsmessageapp'});
+const query = util.promisify(conn.query).bind(conn);
+
 module.exports = {
-
-    registerUser: (username, password, confirmPassword) => {
-        if(password !== confirmPassword) {
+    RegisterUser: async function(username, password, confirmpassword) {
+        if(password !== confirmpassword) {
             return "Passwords must match";
+        } else {
+            let uniqueId = await query('SELECT id FROM users WHERE username = ?', [username]);
+            if(!uniqueId.length) {
+                // user doesnt exists
+                let hash = await bcrypt.hash(password, 10);
+                let isInsertedIntoDatabase = await query('INSERT INTO users (username, password) VALUES (?,?)', [username, hash]);
+                conn.commit();
+                return true;
+            } else {
+                // users exists
+                return "Username is taken! Please another one!";
+            }
         }
-
-        const conn = mysql.createConnection({
-            host: 'localhost',
-            user: 'root',
-            password: '',
-            database: 'nodejsmessageapp'
-        });
-
-        conn.connect((err) => {
-            if(err) return err;
-
-            conn.query('SELECT id FROM users WHERE username = ?', [username], (err, results) => {
-                if(err) return err;
-                if(results) {
-                    // users exists
-                    return "A user already exists with this username - Please select another!";
-                } else {
-                    // user doesnt exists
-                    bcrypt.hash(password, 10, (err, hash) => {
-                        if(err) return err;
-                        conn.query('INSERT INTO users (username, password) VALUES (?, ?)', [username, hash], (err) => {
-                            if(err) return err;
-                            console.log('User created at ' + username);
-                            return true;
-                        })
-                    });
-                }
-            })
-        })
-
+    },
+    
+    LoginUser: async function(username, password) {
+        let usernameCheck = await query('SELECT username, password FROM users WHERE username = ?', [username]);
+        if(!usernameCheck.length) {
+            // user doesnt exists
+            return "A user with that username doesn't exist! Please try again!";
+        } else {
+            // user exists
+            const checkedPassword = await bcrypt.compare(password, usernameCheck[0].password);
+            console.log(checkedPassword);
+            if(checkedPassword) {
+                // passwords match
+                return true;
+            } else {
+                // passwords doesnt match
+                return "Username or password is incorrect - Please try again!";
+            }
+        }
     }
 }
-
-
-
-    // registerUser: function(username, password) {
-    //     let conn = createConnection();
-    //     conn.connect((err) => {
-    //         if(err) throw err;
-    //         conn.query('SELECT id FROM users WHERE username = ?', [username], (err, results) => {
-    //             if(err) throw err;
-    //             if(isObjEmpty(results)) { // returns true if results is empty
-    //                 bcrypt.hash(password, 10, (err, hashedPassword) => {
-    //                     conn.query('INSERT INTO users (username, password) VALUES (?, ?)', [username, hashedPassword], (err) => {
-    //                         if(err) throw err;
-    //                         conn.commit();
-    //                         console.log('1 record inserted at user: ' + username);
-    //                         req.session.loggedin = true;
-    //                         req.session.username = username;
-    //                         return res.redirect('/');
-    //                     });
-    //                 })
-                    
-    //             } else {
-    //                 req.session.error = "Invalid username or password! Please try a different combination";
-    //                 return res.redirect('/login');
-    //             }
-    //         });
-    //     });
-    // };
-    
     // loginUser: function(username, password) {
     //     let conn = mysql.createConnection({
     //         host: 'localhost',
     //         user: 'root',
     //         password: '',
-    //         database: 'nodejsmessageapp'
+    //         database: 'nodejsmessageapp' 
     //     });
     //     conn.connect(function(error) {
     //         if(error) throw error;
