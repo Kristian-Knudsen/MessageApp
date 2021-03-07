@@ -30,7 +30,6 @@ app.get('/login', (req, res) => {
         return res.redirect('/');
     } else if(req.session.errors) {
         const errors = req.session.errors
-        console.log("Error is type" + typeof(errors))
         return res.render('login', {errors: errors});
     } else {
         return res.render('login');
@@ -92,7 +91,7 @@ app.post('/loginuser', [
     const isUserLoggedIn = await imports.LoginUser(username, password);
     if(isUserLoggedIn !== true) {
         // user is not logged in
-        console.log(isUserLoggedIn);
+        console.log("Is user loggedin" + isUserLoggedIn);
         req.session.errors = isUserLoggedIn;
         return res.redirect('/login');
     } else {

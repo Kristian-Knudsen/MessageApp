@@ -13,6 +13,7 @@ module.exports = {
             if(!uniqueId.length) {
                 // user doesnt exists
                 let hash = await bcrypt.hash(password, 10);
+                console.log(`hashedpassword: ${hash} with length ${hash.length}`);
                 let isInsertedIntoDatabase = await query('INSERT INTO users (username, password) VALUES (?,?)', [username, hash]);
                 conn.commit();
                 return true;
@@ -31,7 +32,7 @@ module.exports = {
         } else {
             // user exists
             const checkedPassword = await bcrypt.compare(password, usernameCheck[0].password);
-            console.log(checkedPassword);
+            console.log("Checked Password: " + checkedPassword);
             if(checkedPassword) {
                 // passwords match
                 return true;
